@@ -4,10 +4,16 @@ import { FormEvent, useState } from "react";
 
 import { v4 as uuid } from "uuid";
 
+import useSWR from "swr";
+import fetcher from "@/utils/fetchMessages";
+
 const ChatInput = () => {
   const [input, setInput] = useState<string>("");
 
-  const addMessage = (e: FormEvent<HTMLFormElement>) => {
+  // Fetching and storing the messages from the DB into the cache using SWR!
+  const { data: messages, error, mutate } = useSWR("/api/getMessages", fetcher);
+
+  const addMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input) return;
 
@@ -27,17 +33,24 @@ const ChatInput = () => {
     };
 
     const uploadMessageToUpstash = async () => {
-      const res = await fetch("/api/addMessage", {
+      const data = await fetch("/api/addMessage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
-      });
+      }).then((res) => res.json());
 
-      const data = res.json();
-      console.log("Message added >>>>>", data);
+      // returning our newly added message, plus the fetched messages using swr
+      return [data.message, ...messages!];
     };
 
-    uploadMessageToUpstash();
+    // Mutate the cache by popping in the newly added message.
+    await mutate(uploadMessageToUpstash, {
+      // Extra step for a faster UI experience. Automatically, render the new message to the user on send
+      // Before the new message is posted and fetched from the DB.
+      // A check is done afterwards, and if there is an error, the new message will detach itself
+      optimisticData: [message, ...messages!],
+      rollbackOnError: true,
+    });
   };
 
   return (
