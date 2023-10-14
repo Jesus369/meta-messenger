@@ -1,13 +1,18 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-
 import { v4 as uuid } from "uuid";
-
 import useSWR from "swr";
-import fetcher from "@/utils/fetchMessages";
 
-const ChatInput = () => {
+import fetcher from "@/utils/fetchMessages";
+import { getServerSession, Session } from "next-auth";
+
+type Props = {
+  session: Session;
+};
+
+const ChatInput = ({ session }: Props) => {
+  let username = session;
   const [input, setInput] = useState<string>("");
 
   // Fetching and storing the messages from the DB into the cache using SWR!
@@ -15,7 +20,7 @@ const ChatInput = () => {
 
   const addMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input) return;
+    if (!input || !session) return;
 
     const id = uuid();
     const messageToSend = input;
@@ -26,9 +31,8 @@ const ChatInput = () => {
       id,
       message: messageToSend,
       created_at: Date.now(),
-      username: "Jesus Flores",
-      profilePic:
-        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
+      username: session?.user?.name!,
+      profilePic: session?.user?.image!,
       email: "je.flores28@gmail.com",
     };
 
@@ -61,6 +65,7 @@ const ChatInput = () => {
     >
       <input
         type="text"
+        disabled={!session}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="Enter a message here..."

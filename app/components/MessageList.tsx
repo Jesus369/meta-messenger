@@ -6,7 +6,11 @@ import { useEffect } from "react";
 import useSWR from "swr";
 import MessageComponent from "./MessageComponent";
 
-const MessageList = () => {
+type Props = {
+  initialMsgs: Message[];
+};
+
+const MessageList = ({ initialMsgs }: Props) => {
   const {
     data: messages,
     error,
@@ -28,11 +32,16 @@ const MessageList = () => {
         });
       }
     });
+
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
   }, [mutate, clientPusher, messages]);
 
   return (
     <div className="space-y-5 px-2 pt-8 pb-32 max-w-2xl xl:max-w-4xl mx-auto">
-      {messages?.map((message, index) => (
+      {(messages || initialMsgs).map((message, index) => (
         <MessageComponent key={message.id} message={message} />
       ))}
     </div>

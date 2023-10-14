@@ -1,5 +1,7 @@
 import "@/styles/globals.css";
+import { Suspense } from "react";
 import Header from "./Header";
+import Loading from "./loading";
 
 export const metadata = {
   title: "Meta Messenger",
@@ -15,7 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Header />
-        {children}
+        <Suspense fallback={<Loading />}>{children}</Suspense>
       </body>
     </html>
   );
